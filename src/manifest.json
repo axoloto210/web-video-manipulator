@@ -6,5 +6,12 @@
   "action": {
     "default_popup": "web_video_manipulator.html",
     "default_icon": "web_video_manipulator.png"
-  }
+  },
+    "content_scripts": [
+    {
+      "matches": ["https://*/*"],
+      "js": ["index.js"],
+      "run_at": "document_start"
+    }
+  ]
 }
