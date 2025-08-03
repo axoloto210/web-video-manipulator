@@ -76,6 +76,27 @@
         color: #666;
         margin-top: 10px;
       }
+      
+      .settings-section {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+      }
+      
+      .setting-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      
+      .setting-input {
+        width: 60px;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
@@ -97,7 +118,19 @@
     <div class="status" id="status">Disabled</div>
     
     <div class="instructions">
-      When enabled, use ← → arrow keys to rewind/forward videos by 5 seconds.
+      When enabled, use ← → arrow keys to rewind/forward videos.
+    </div>
+    
+    <div class="settings-section">
+      <h3>Settings</h3>
+      <div class="setting-row">
+        <span>Rewind seconds:</span>
+        <input type="number" id="rewind-seconds" class="setting-input" min="1" max="60" value="5">
+      </div>
+      <div class="setting-row">
+        <span>Forward seconds:</span>
+        <input type="number" id="forward-seconds" class="setting-input" min="1" max="60" value="5">
+      </div>
     </div>
     
     <script src="popup.js"></script>
