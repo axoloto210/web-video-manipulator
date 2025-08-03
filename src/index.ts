@@ -1,5 +1,9 @@
-const REWIND_SECOND = 5;
-const FORWARD_SECOND = 5;
+const DEFAULT_REWIND_SECONDS = 5;
+const DEFAULT_FORWARD_SECONDS = 5;
+
+let isExtensionEnabled = false;
+let rewindSeconds = DEFAULT_REWIND_SECONDS;
+let forwardSeconds = DEFAULT_FORWARD_SECONDS;
 
 function findVideoElement(): HTMLVideoElement | null {
   const videos = document.querySelectorAll<HTMLVideoElement>('video');
@@ -16,8 +20,8 @@ function findVideoElement(): HTMLVideoElement | null {
 
 function rewindVideo(video: HTMLVideoElement): boolean {
   try {
-    if (video.currentTime >= REWIND_SECOND) {
-      video.currentTime -= REWIND_SECOND;
+    if (video.currentTime >= rewindSeconds) {
+      video.currentTime -= rewindSeconds;
     } else {
       video.currentTime = 0;
     }
@@ -30,8 +34,8 @@ function rewindVideo(video: HTMLVideoElement): boolean {
 
 function forwardVideo(video: HTMLVideoElement): boolean {
   try {
-    if (video.currentTime + FORWARD_SECOND <= video.duration) {
-      video.currentTime += FORWARD_SECOND;
+    if (video.currentTime + forwardSeconds <= video.duration) {
+      video.currentTime += forwardSeconds;
     } else {
       video.currentTime = video.duration;
     }
@@ -52,6 +56,10 @@ function isInputElement(element: Element | null): boolean {
 }
 
 function handleKeyPress(event: KeyboardEvent): void {
+  if (!isExtensionEnabled) {
+    return;
+  }
+  
   if (isInputElement(document.activeElement)) {
     return;
   }
@@ -70,10 +78,48 @@ function handleKeyPress(event: KeyboardEvent): void {
   }
 }
 
+const getStorageKeyForContent = (hostname: string, type: 'enabled' | 'rewind' | 'forward'): string => {
+  return `${hostname}_${type}`;
+};
+
+async function checkSiteStatus(): Promise<void> {
+  try {
+    const hostname = window.location.hostname;
+    const enabledKey = getStorageKeyForContent(hostname, 'enabled');
+    const rewindKey = getStorageKeyForContent(hostname, 'rewind');
+    const forwardKey = getStorageKeyForContent(hostname, 'forward');
+    
+    const result = await chrome.storage.local.get([enabledKey, rewindKey, forwardKey]);
+    isExtensionEnabled = result[enabledKey] || false;
+    rewindSeconds = result[rewindKey] || DEFAULT_REWIND_SECONDS;
+    forwardSeconds = result[forwardKey] || DEFAULT_FORWARD_SECONDS;
+    
+    console.log(`Video Control Extension: ${isExtensionEnabled ? 'enabled' : 'disabled'} for ${hostname} (rewind: ${rewindSeconds}s, forward: ${forwardSeconds}s)`);
+  } catch (error) {
+    console.error('Error checking site status:', error);
+    isExtensionEnabled = false;
+    rewindSeconds = DEFAULT_REWIND_SECONDS;
+    forwardSeconds = DEFAULT_FORWARD_SECONDS;
+  }
+}
+
 function initializeExtension(): void {
   console.log('Video Control Extension loaded');
   document.addEventListener('keydown', handleKeyPress, true);
+  checkSiteStatus();
 }
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === 'toggleExtension') {
+    isExtensionEnabled = message.enabled;
+    console.log(`Video Control Extension: ${isExtensionEnabled ? 'enabled' : 'disabled'}`);
+  } else if (message.action === 'updateSettings') {
+    rewindSeconds = message.rewindSeconds || DEFAULT_REWIND_SECONDS;
+    forwardSeconds = message.forwardSeconds || DEFAULT_FORWARD_SECONDS;
+    console.log(`Video Control Extension settings updated: rewind ${rewindSeconds}s, forward ${forwardSeconds}s`);
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeExtension);
