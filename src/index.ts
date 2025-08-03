@@ -1,6 +1,8 @@
 const REWIND_SECOND = 5;
 const FORWARD_SECOND = 5;
 
+let isExtensionEnabled = false;
+
 function findVideoElement(): HTMLVideoElement | null {
   const videos = document.querySelectorAll<HTMLVideoElement>('video');
   if (videos.length === 0) return null;
@@ -52,6 +54,10 @@ function isInputElement(element: Element | null): boolean {
 }
 
 function handleKeyPress(event: KeyboardEvent): void {
+  if (!isExtensionEnabled) {
+    return;
+  }
+  
   if (isInputElement(document.activeElement)) {
     return;
   }
@@ -70,10 +76,31 @@ function handleKeyPress(event: KeyboardEvent): void {
   }
 }
 
+async function checkSiteStatus(): Promise<void> {
+  try {
+    const hostname = window.location.hostname;
+    const result = await chrome.storage.local.get([hostname]);
+    isExtensionEnabled = result[hostname] || false;
+    console.log(`Video Control Extension: ${isExtensionEnabled ? 'enabled' : 'disabled'} for ${hostname}`);
+  } catch (error) {
+    console.error('Error checking site status:', error);
+    isExtensionEnabled = false;
+  }
+}
+
 function initializeExtension(): void {
   console.log('Video Control Extension loaded');
   document.addEventListener('keydown', handleKeyPress, true);
+  checkSiteStatus();
 }
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'toggleExtension') {
+    isExtensionEnabled = message.enabled;
+    console.log(`Video Control Extension: ${isExtensionEnabled ? 'enabled' : 'disabled'}`);
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeExtension);
