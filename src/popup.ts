@@ -49,9 +49,18 @@ const toggleSiteStatus = async (hostname: string): Promise<boolean> => {
     
     await chrome.storage.local.set({ [enabledKey]: newStatus });
     
-    // Notify content script about the change
+    // Inject or remove content script based on status
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.id) {
+      if (newStatus) {
+        // Inject the content script
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['index.js']
+        });
+      }
+      
+      // Send message to update status (if script is already injected)
       chrome.tabs.sendMessage(tab.id, { 
         action: 'toggleExtension', 
         enabled: newStatus 
@@ -77,7 +86,7 @@ const saveSecondsSettings = async (hostname: string, rewindSeconds: number, forw
       [forwardKey]: forwardSeconds
     });
     
-    // Notify content script about the change
+    // Notify content script about the change (if it's injected)
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.id) {
       chrome.tabs.sendMessage(tab.id, { 
@@ -119,6 +128,16 @@ const initializePopup = async (): Promise<void> => {
     const forwardSeconds = result[forwardKey] || DEFAULT_FORWARD_SECONDS_POPUP;
     
     updateUI(hostname, isEnabled, rewindSeconds, forwardSeconds);
+    
+    // Inject content script if extension is enabled for this site
+    if (isEnabled && tab.id) {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['index.js']
+      }).catch(() => {
+        // Script might already be injected, that's okay
+      });
+    }
     
     // Set up toggle checkbox change handler
     const toggleCheckbox = document.getElementById('toggle-checkbox') as HTMLInputElement;
