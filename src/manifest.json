@@ -3,13 +3,19 @@
   "description": "Enables you to rewind or fast-forward videos",
   "version": "1.0",
   "manifest_version": 3,
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png", 
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": [
     "storage",
     "activeTab"
   ],
   "action": {
     "default_popup": "web_video_manipulator.html",
-    "default_icon": "web_video_manipulator.png"
+    "default_icon": "icon.png"
   },
     "content_scripts": [
     {
