@@ -11,11 +11,17 @@
   },
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting"
+    "activeTab"
   ],
   "action": {
     "default_popup": "web_video_manipulator.html",
     "default_icon": "icon.png"
-  }
+  },
+    "content_scripts": [
+    {
+      "matches": ["https://*/*"],
+      "js": ["index.js"],
+      "run_at": "document_start"
+    }
+  ]
 }
