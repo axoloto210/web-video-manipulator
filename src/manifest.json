@@ -1,7 +1,7 @@
 {
   "name": "Web Video Manipulator",
   "description": "Enables you to rewind or fast-forward videos",
-  "version": "1.0",
+  "version": "1.1",
   "manifest_version": 3,
   "icons": {
     "16": "icon16.png",
@@ -11,11 +11,17 @@
   },
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting"
+    "activeTab"
   ],
   "action": {
     "default_popup": "web_video_manipulator.html",
     "default_icon": "icon.png"
-  }
+  },
+    "content_scripts": [
+    {
+      "matches": ["https://*/*"],
+      "js": ["index.js"],
+      "run_at": "document_start"
+    }
+  ]
 }
