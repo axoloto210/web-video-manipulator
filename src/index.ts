@@ -46,13 +46,21 @@ function forwardVideo(video: HTMLVideoElement): boolean {
   }
 }
 
+// Input types that don't accept text; arrow keys on these (e.g. a player's seek bar)
+// should still be handled by this extension.
+const NON_TEXT_INPUT_TYPES = new Set(['range', 'checkbox', 'radio', 'button', 'submit', 'reset', 'image', 'color', 'file']);
+
 function isInputElement(element: Element | null): boolean {
   if (!element) return false;
-  
+
+  if ((element as HTMLElement).isContentEditable) return true;
+
   const tagName = element.tagName.toLowerCase();
-  const isContentEditable = (element as HTMLElement).contentEditable === 'true';
-  
-  return tagName === 'input' || tagName === 'textarea' || isContentEditable;
+  if (tagName === 'textarea' || tagName === 'select') return true;
+  if (tagName === 'input') {
+    return !NON_TEXT_INPUT_TYPES.has((element as HTMLInputElement).type);
+  }
+  return false;
 }
 
 function handleKeyPress(event: KeyboardEvent): void {
@@ -67,14 +75,18 @@ function handleKeyPress(event: KeyboardEvent): void {
   const video = findVideoElement();
   if (!video) return;
 
+  let handled = false;
   if (event.key === 'ArrowLeft') {
-    if (rewindVideo(video)) {
-      event.preventDefault();
-    }
+    handled = rewindVideo(video);
   } else if (event.key === 'ArrowRight') {
-    if (forwardVideo(video)) {
-      event.preventDefault();
-    }
+    handled = forwardVideo(video);
+  }
+
+  if (handled) {
+    // Stop the page's own player shortcuts (e.g. Shaka Player) from also seeking,
+    // since they may seek relative to a stale seek-bar value.
+    event.preventDefault();
+    event.stopImmediatePropagation();
   }
 }
 
@@ -105,7 +117,8 @@ async function checkSiteStatus(): Promise<void> {
 
 function initializeExtension(): void {
   console.log('Video Control Extension loaded');
-  document.addEventListener('keydown', handleKeyPress, true);
+  // Capture on window so this runs before any page-level keydown handlers.
+  window.addEventListener('keydown', handleKeyPress, true);
   checkSiteStatus();
 }
 
